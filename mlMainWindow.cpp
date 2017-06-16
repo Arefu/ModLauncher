@@ -295,7 +295,6 @@ mlMainWindow::mlMainWindow()
 	mTreyarchTheme = Settings.value("UseDarkTheme", false).toBool();
 	mUseBuiltInEditor= Settings.value("InBuiltEditor",false).toBool();
 	mOpenAPEAfter = Settings.value("GDTCreate_OpenAPEAfterCreation",false).toBool();
-	mUseExpertZone = Settings.value("Expert_ZoneEditor",false).toBool();
 
 	mGamePath = QString(getenv("TA_GAME_PATH")).replace('\\', '/');
 	mToolsPath = QString(getenv("TA_TOOLS_PATH")).replace('\\', '/');
@@ -430,6 +429,10 @@ void mlMainWindow::CreateActions()
 	mActionFileLevelEditor->setToolTip("Level Editor");
 	connect(mActionFileLevelEditor, SIGNAL(triggered()), this, SLOT(OnFileLevelEditor()));
 
+	mActionLaunchGame = new QAction(QIcon(":/resources/BlackOps3.png"), "Open Black Ops III", this);
+	mActionLaunchGame->setToolTip("Launch Game");
+	connect(mActionLaunchGame,SIGNAL(triggered()),this,SLOT(OnLaunchGame()));
+
 	mActionFileExport2Bin = new QAction(QIcon(":/resources/devhead.png"), "&Export2Bin GUI", this);
 	mActionFileExport2Bin->setShortcut(QKeySequence("Ctrl+E"));
 	connect(mActionFileExport2Bin, SIGNAL(triggered()), this, SLOT(OnFileExport2Bin()));
@@ -505,6 +508,7 @@ void mlMainWindow::CreateToolBar()
 	ToolBar->addAction(mActionEditBuild);
 	ToolBar->addAction(mActionEditPublish);
 	ToolBar->addSeparator();
+	ToolBar->addAction(mActionLaunchGame);
 	ToolBar->addAction(mActionFileAssetEditor);
 	ToolBar->addAction(mActionFileLevelEditor);
 	ToolBar->addAction(mActionFileExport2Bin);
@@ -565,6 +569,11 @@ void mlMainWindow::InitExport2BinGUI()
 	dock->resize(QSize(256, 256));
 
 	mExport2BinGUIWidget = dock;
+}
+
+void mlMainWindow::OnLaunchGame()
+{
+	ShellExecute(NULL, "open", QString("steam://rungameid/311210").toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
 }
 
 void mlMainWindow::InitGDTCreator()
@@ -1271,11 +1280,6 @@ void mlMainWindow::OnEditOptions()
 	InBuiltEditor->setChecked(Settings.value("InBuiltEditor",false).toBool());
 	Layout->addWidget(InBuiltEditor);
 
-	QCheckBox* AdvanceEditor = new QCheckBox("Use Advance Zone Editor Features");
-	AdvanceEditor->setToolTip("Toggle between basic and advance zone editor features.");
-	AdvanceEditor->setChecked(Settings.value("Expert_ZoneEditor",false).toBool());
-	Layout->addWidget(AdvanceEditor);
-
 	QHBoxLayout* LanguageLayout = new QHBoxLayout();
 	LanguageLayout->addWidget(new QLabel("Build Language:"));
 
@@ -1307,12 +1311,10 @@ void mlMainWindow::OnEditOptions()
 	mBuildLanguage = LanguageCombo->currentText();
 	mTreyarchTheme = Checkbox->isChecked();
 	mUseBuiltInEditor = InBuiltEditor->isChecked();
-	mUseExpertZone = AdvanceEditor->isChecked();
 
 	Settings.setValue("BuildLanguage", mBuildLanguage);
 	Settings.setValue("UseDarkTheme", mTreyarchTheme);
 	Settings.setValue("InBuiltEditor",mUseBuiltInEditor);
-	Settings.setValue("Expert_ZoneEditor",mUseExpertZone);
 	UpdateTheme();
 }
 
@@ -1661,6 +1663,7 @@ void mlMainWindow::OnOpenZoneFile()
 void mlMainWindow::OnOpenModRootFolder()
 {
 	QList<QTreeWidgetItem*> ItemList = mFileListWidget->selectedItems();
+	QString Name;
 	if (ItemList.isEmpty())
 		return;
 
@@ -1668,13 +1671,13 @@ void mlMainWindow::OnOpenModRootFolder()
 
 	if (Item->data(0, Qt::UserRole).toInt() == ML_ITEM_MAP)
 	{
-		QString MapName = Item->text(0);
-		ShellExecute(NULL, "open", (QString("\"%1/usermaps/%2\"").arg(mGamePath, MapName)).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
+		Name = Item->text(0);
+		ShellExecute(NULL, "open", (QString("\"%1/usermaps/%2\"").arg(mGamePath, Name)).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
 	}
 	else
 	{
-		QString ModName = Item->parent() ? Item->parent()->text(0) : Item->text(0);
-		ShellExecute(NULL, "open", (QString("\"%1/mods/%2\"").arg(mGamePath, ModName)).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
+		Name = Item->parent() ? Item->parent()->text(0) : Item->text(0);
+		ShellExecute(NULL, "open", (QString("\"%1/mods/%2\"").arg(mGamePath, Name)).toLatin1().constData(), "", NULL, SW_SHOWDEFAULT);
 	}
 }
 
@@ -1910,7 +1913,7 @@ void mlMainWindow::OnItemSelected(const QItemSelection& Selected, const QItemSel
 	{
 		if(ParentFolderList.last().parent().data().toString() == "raw" || ParentFolderList.last().parent().data().toString() == "Call of Duty Black Ops III") //Don't Process If It's Out Of Raw, or how the hell did you get that far? Maybe I should prmopt them...?
 		{
-			QMessageBox::question(this,"Hold Up!","Hey! This File Isn't In Raw! Please Move It To Raw.",QMessageBox::No);
+			QMessageBox::question(this,"Hold Up!","Hey! This File Isn't In Raw! Please Move It To Raw.",QMessageBox::Ok);
 			return;
 		}
 		ParentFolderList << ParentFolderList.last().parent();
@@ -1937,7 +1940,6 @@ void mlMainWindow::OnItemSelected(const QItemSelection& Selected, const QItemSel
 	if(!AssetType.textValue().isEmpty())
 	{
 		mZoneTextEdit->appendPlainText(QString("%1,%2").arg(AssetType.textValue(),ParentFolderStringList.join("/")));
-		mOutputWidget->appendPlainText("Done");
 	}
 
 

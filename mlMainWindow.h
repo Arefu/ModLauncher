@@ -131,6 +131,7 @@ protected slots:
 	void UpdateSyntax();
 	void OnCancelZone();
 	void OnItemSelected(const QItemSelection&,const QItemSelection&);
+	void OnLaunchGame();
 
 protected:
 	void closeEvent(QCloseEvent* Event);
@@ -170,6 +171,7 @@ protected:
 	QAction* mActionFileNew;
 	QAction* mActionFileAssetEditor;
 	QAction* mActionFileLevelEditor;
+	QAction* mActionLaunchGame;
 	QAction* mActionFileExport2Bin;
 	QAction* mActionFileExit;
 	QAction* mActionEditBuild;
